@@ -23,6 +23,12 @@ protected:
         Config::get().port() = "8080";
         Config::get().login() = "lab";
         Config::get().password() = "12345";
+
+        Poco::Data::Session session = database::Database::get().create_session();
+        Statement drop(session);
+        drop << "DELETE FROM Person", now;
+        Statement reset_ai(session);
+        reset_ai << "ALTER TABLE Person AUTO_INCREMENT = 1", now;
     }
     ~TestApp() {
         Poco::Data::Session session = database::Database::get().create_session();
@@ -36,7 +42,6 @@ protected:
 
 protected:
 };
-
 
 TEST_F(TestApp, TestPerson) {
 
