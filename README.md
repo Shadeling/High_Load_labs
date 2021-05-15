@@ -1,14 +1,14 @@
-# Лабораторная работа №1 #
+# Лабораторная работа №2 #
+Студент: Миронов Святослав
+Группа: М8О-103М-20
 
-Выполнил: Миронов Святослав, М8О-103М-20
 
 ## Сборка проекта ##
-
 ```bash
-mkdir -p CMakeFiles
-cd CMakeFiles
-cmake --configure ..
-cmake --build ./
+    mkdir -p CMakeFiles 
+    cd CMakeFiles
+    cmake --configure ..
+    cmake --build ./
 ```
 
 ## Настройка базы данных ##
@@ -24,13 +24,13 @@ mysql> source db_scripts/db_creation.sql
 mysql> source db_scripts/data_generation.sql
 ```
 
-## Запуск сервера ##
-
-Для запуска сервера следует выполнить команду:
+## Запуск сервера##
 
 ```bash
-sudo sh ./start.sh
+$ docker-compose up -d
+$ sudo sh ./start.sh
 ```
+
 
 ## Тестирование с помощью gtest ##
 
@@ -48,8 +48,19 @@ sudo sh ./start.sh
 wrk -t[NUMTREADS] -c50 -d30s http://localhost:8080/person?login=Stacy_Durrant1977368307@nimogy.biz
 ```
 
-Полученные результаты:
+Кластер Apache Ignite из двух узлов и непосредственно приложение с БД были запущены на одной физической машине.  
 
+В зависимости от числа потоков количество ответов в секуду и задержка менялись следующим образом:
+
+**С использованием Apache Ignite**
+Threads | Requests/sec  | Latency(ms)
+---     | ---           | ---
+1       | 4533.16       | 4.31
+2       | 4933.33       | 3.10
+6       | 4765.81       | 2.54
+10      | 4723.15       | 3.53
+
+**Без использования Apache Ignite (ЛР №1)**
 Threads | Requests/sec | Latency(ms)
 ---     | ---          | ---
 1       | 633.47       | 25.41
