@@ -55,14 +55,15 @@ mysql> exit;
     wrk -t[NUMTREADS] -c50 -d30s http://localhost:8080/person?login=Stacy_Durrant1977368307@nimogy.biz
 ```
 
-## Отключение контейнеров ##
-```bash
-$ docker-compose stop
-```
-
 Threads | Requests/sec | Latency(ms)
 ---     | ---          | ---
 1       | 874.02       | 21.04
 2       | 969.71       | 16.49
 6       | 967.10       | 16.53
 10      | 955.60       | 16.72
+
+
+## Отключение контейнеров ##
+```bash
+$ docker-compose stop
+```
