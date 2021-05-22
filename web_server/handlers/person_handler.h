@@ -1,3 +1,7 @@
+//
+// Created by alex on 08.04.2021.
+//
+
 #ifndef PERSON_HANDLER_H
 #define PERSON_HANDLER_H
 
@@ -47,7 +51,7 @@ using Poco::Util::ServerApplication;
 
 
 #include "../../database/person.h"
-
+//#include "stdio.h"
 class PersonHandler : public HTTPRequestHandler
 {
 private:
@@ -74,6 +78,17 @@ private:
         return true;
     };
 
+    bool check_age(unsigned char age, std::string &reason)
+    {
+        if (age < 1 || age > 120)
+        {
+            reason = "Age must be between 1 and 120 ";
+            return false;
+        }
+
+        return true;
+    };
+
 public:
     PersonHandler(const std::string &format) : _format(format)
     {
@@ -88,10 +103,28 @@ public:
         std::ostream &ostr = response.send();
 
         if(request.getMethod() == HTTPRequest::HTTP_GET) {
+            bool no_cache = false;
             if (form.has("login")) {
+                if (form.has("no_cache"))
+                    no_cache = true;
+
                 std::string login = form.get("login");
+                if (!no_cache)
+                {
+                    try
+                    {
+                        database::Person result = database::Person::read_from_cache_by_login(login);
+                        Poco::JSON::Stringifier::stringify(result.toJSON(), ostr);
+                        return;
+                    }
+                    catch (...)
+                    {
+                        printf("cache miss\n");
+                    }
+                }
                 try {
                     database::Person result = database::Person::read_by_login(login);
+                    result.save_to_cache();
                     Poco::JSON::Stringifier::stringify(result.toJSON(), ostr);
                     return;
                 }
@@ -99,7 +132,6 @@ public:
                     ostr << "{ \"result\": false , \"reason\": \"not found\" }";
                     return;
                 }
-
             } else if (form.has("first_name") && form.has("last_name")) {
                 try {
                     std::string fn = form.get("first_name");
@@ -116,7 +148,6 @@ public:
                 }
                 return;
             }
-        
             auto results = database::Person::read_all();
             Poco::JSON::Array arr;
             for (auto s : results)
@@ -154,11 +185,21 @@ public:
                                 message += "<br>";
                             }
 
+
+                            if (!check_age(person.get_age(), reason))
+                            {
+                                check_result = false;
+                                message += reason;
+                                message += "<br>";
+                            }
+
                             if (check_result)
                             {
                                 try
                                 {
-                                    person.save_to_mysql();
+                                    person.send_to_queue();
+//                                    person.save_to_mysql();
+                                    person.save_to_cache();
                                     ostr << "{ \"result\": true }";
                                     return;
                                 }

@@ -1,58 +1,90 @@
-# Лабораторная работа №1 #
+# Лабораторная работа №4 #
+Студент: Миронов Святослав
 
-Выполнил: Миронов Святослав, М8О-103М-20
+Группа: М8О-103М-20
+
+## Установка необходимых компонентов ##
+[Описана здесь](https://github.com/DVDemon/hl_mai_lab_01/blob/master/README.md)
 
 ## Сборка проекта ##
-
 ```bash
-mkdir -p CMakeFiles
-cd CMakeFiles
-cmake --configure ..
-cmake --build ./
+    mkdir -p CMakeFiles && cd CMakeFiles && cmake --configure .. && cmake --build ./ && cd -
 ```
 
-## Настройка базы данных ##
 
-1. Для создания тестового пользователя с именем lab и базы данных itlabs с необходимой таблицей Person необходимо выполнить команды из файла db_scripts/db_creation.sql.
-2. Скрипт заполнения базы данных сгенерированными записями (100 тысяч строк) записан в файле db_scripts/data_generation.sql.
-
-Выполнение скрипта из файла:
-
+## Запуск необходимых контейнеров ##
 ```bash
-sudo mysql
-mysql> source db_scripts/db_creation.sql
-mysql> source db_scripts/data_generation.sql
+    docker-compose up -d
 ```
 
-## Запуск сервера ##
-
-Для запуска сервера следует выполнить команду:
+## Создание и заполнение базы данных во всех шардах ##
 
 ```bash
-sudo sh ./start.sh
+$ sudo mysql -utest -ppzjqUkMnc7vfNHET -h 127.0.0.1 -P6033 --comments
+mysql> source infrastructure/db_scripts/db_creation.sql;
+mysql> source infrastructure/db_scripts/sharded_data_generation.sql;
+mysql> exit; 
+```
+
+## Запуск основного приложения ##
+```bash
+$ sudo sh ./start.sh
+```
+
+## Запуск приложения с очередью ##
+```bash
+$ sudo sh ./start_writer.sh
 ```
 
 ## Тестирование с помощью gtest ##
 
+Перед тестами необходимо очистить базы данных в шардах командами:
+```bash
+$ sudo mysql -utest -ppzjqUkMnc7vfNHET -h 127.0.0.1 -P6033 --comments
+mysql> source infrastructure/db_scripts/clear_tables.sql;
+mysql> exit; 
+```
+
 Запуск модульных тестов осуществляется командой:
 
 ```bash
-./CMakeFiles/gtests
+    ./CMakeFiles/gtests
 ```
 
-## Тестирование с помощью wrk ##
-
-Нагрузочное тестирование производилось следующей командой:
+## Нагрузочное тестирование ##
+Нагрузочное тестирование осуществлялось с помощью утилиты wrk.
 
 ```bash
-wrk -t[NUMTREADS] -c50 -d30s http://localhost:8080/person?login=Stacy_Durrant1977368307@nimogy.biz
+# Тест на запись
+$ wrk -s tests/post_wrk_req.lua -t $NUMTREADS -c50 -d30s http://localhost:8080
 ```
 
-Полученные результаты:
+### Тестирование на запись ###
+
+Результаты с использованием очередей Apache Kafka (ЛР 4):
 
 Threads | Requests/sec | Latency(ms)
 ---     | ---          | ---
-1       | 633.47       | 25.41
-2       | 631.96       | 25.44
-6       | 629.59       | 25.41
-10      | 625.15       | 25.59
+1       | 75.78        | 210.38
+2       | 77.27        | 206.36
+6       | 77.20        | 206.06
+10      | 76.61        | 207.80
+
+
+## Точки входа ##
+Добавление пользователя
+```bash
+$ curl -d "login=mir@slav&last_name=Mironov&first_name=Slav&age=22" -X POST http://localhost:8080/person
+```
+Получение всех пользователей
+```bash
+$ curl -X GET http://localhost:8080/person
+```
+Получение пользователей по маске
+```bash
+$ curl -X GET http://localhost:8080/person\?first_name\=Sla
+```
+Получение конкретного пользователя
+```bash
+$ curl -X GET http://localhost:8080/person\?login\=mir@123
+```

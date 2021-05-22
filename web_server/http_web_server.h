@@ -41,7 +41,6 @@ using Poco::Util::ServerApplication;
 #include "../config/config.h"
 
 
-
 class HTTPWebServer : public Poco::Util::ServerApplication
 {
 public:
@@ -73,7 +72,7 @@ protected:
                 .repeatable(false)
                 .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleHelp)));
         options.addOption(
-            Option("host", "h", "set ip address for database")
+            Option("host", "h", "set ip address for dtabase")
                 .required(false)
                 .repeatable(false)
                 .argument("value")
@@ -107,7 +106,24 @@ protected:
                 .required(false)
                 .repeatable(false)
                 .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleInitDB)));
-        
+        options.addOption(
+                Option("cache_servers", "cs", "set ignite cache servers")
+                        .required(false)
+                        .repeatable(false)
+                        .argument("value")
+                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleCacheServers)));
+        options.addOption(
+                Option("queue", "q", "set queue host")
+                        .required(false)
+                        .repeatable(false)
+                        .argument("value")
+                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleQueueHost)));
+        options.addOption(
+                Option("topic", "t", "set queue topic")
+                        .required(false)
+                        .repeatable(false)
+                        .argument("value")
+                        .callback(OptionCallback<HTTPWebServer>(this, &HTTPWebServer::handleQueueTopic)));
     }
 
     void handleInitDB([[maybe_unused]] const std::string &name,
@@ -149,7 +165,26 @@ protected:
         Config::get().host() = value;
     }
 
+    void handleCacheServers([[maybe_unused]] const std::string &name,
+                            [[maybe_unused]] const std::string &value)
+    {
+        std::cout << "cache servers:" << value << std::endl;
+        Config::get().cache_servers() = value;
+    }
 
+    void handleQueueHost([[maybe_unused]] const std::string &name,
+                         [[maybe_unused]] const std::string &value)
+    {
+        std::cout << "queue host:" << value << std::endl;
+        Config::get().queue_host() = value;
+    }
+
+    void handleQueueTopic([[maybe_unused]] const std::string &name,
+                          [[maybe_unused]] const std::string &value)
+    {
+        std::cout << "queue topic:" << value << std::endl;
+        Config::get().queue_topic() = value;
+    }
 
     void handleHelp([[maybe_unused]] const std::string &name,
                     [[maybe_unused]] const std::string &value)
@@ -174,7 +209,8 @@ protected:
             std::string format(
                 config().getString("HTTPWebServer.format",
                                    DateTimeFormat::SORTABLE_FORMAT));
-            
+//            database::Person::warm_up_cache(); // прогревка кэша можно реализовать опции при запуске
+
             ServerSocket svs(Poco::Net::SocketAddress("0.0.0.0", port));
             HTTPServer srv(new HTTPRequestFactory(format),
                            svs, new HTTPServerParams);
